@@ -4,7 +4,10 @@ project(stacktrace VERSION 2.0.0 LANGUAGES CXX)
 # ───────────────────────── Standard ─────────────────────────
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+# Use GNU extensions (gnu++17) so glibc exposes POSIX additions to the standard
+# C headers — e.g. localtime_r in <ctime>, getifaddrs feature guards — which
+# strict -std=c++17 hides behind __STRICT_ANSI__.
+set(CMAKE_CXX_EXTENSIONS ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -72,6 +75,7 @@ add_executable(stacktrace
   src/panels/Notes.cpp
   src/net/HttpClient.cpp
   src/net/RssParser.cpp
+  src/calendar/ICalParser.cpp
   src/config/Config.cpp
   ${PLATFORM_SRC})
 

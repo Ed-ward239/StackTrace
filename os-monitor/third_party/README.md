@@ -1,6 +1,6 @@
 # third_party
 
-StackTrace v2 pulls its dependencies automatically at configure time via
+StackTrace pulls its dependencies automatically at configure time via
 CMake's `FetchContent`, so this directory stays empty in the repo — there are
 no vendored sources to commit and nothing to `git submodule update`.
 

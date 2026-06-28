@@ -8,7 +8,7 @@
 namespace stacktrace {
 
 // Displays the contents of the notes file. In-panel editing (an FTXUI Input
-// component bound to the file) is a v2 roadmap item.
+// component bound to the file) is a roadmap item.
 class NotesPanel : public Panel {
  public:
   explicit NotesPanel(std::string path);

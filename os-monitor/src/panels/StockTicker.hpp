@@ -1,23 +1,26 @@
 #pragma once
 
+#include "net/HttpClient.hpp"
 #include "panels/Panel.hpp"
 
-#include <chrono>
+#include <atomic>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
-
-namespace stacktrace::net {
-class HttpClient;
-}
 
 namespace stacktrace {
 
+// Live stock/crypto quotes from Yahoo Finance. A background worker polls once
+// per minute so the render loop never blocks on the network; Render() reads a
+// snapshot under a short lock.
 class StockTickerPanel : public Panel {
  public:
-  StockTickerPanel(std::vector<std::string> symbols, net::HttpClient* http);
+  explicit StockTickerPanel(std::vector<std::string> symbols);
+  ~StockTickerPanel() override;
 
   ftxui::Element Render() override;
-  void Update() override;  // polls Yahoo Finance at most once per minute
+  void Update() override {}  // no-op: the worker thread refreshes
   std::string Title() const override { return "Markets"; }
 
  private:
@@ -28,12 +31,15 @@ class StockTickerPanel : public Panel {
     bool live = false;
   };
 
-  void Fetch();
+  void Worker();
+  Quote FetchOne(const std::string& symbol);
 
   std::vector<std::string> symbols_;
-  std::vector<Quote> quotes_;
-  net::HttpClient* http_;
-  std::chrono::steady_clock::time_point last_fetch_{};
+  std::vector<Quote> quotes_;  // guarded by mutex_
+  std::mutex mutex_;
+  net::HttpClient http_;
+  std::atomic<bool> stop_{false};
+  std::thread worker_;
 };
 
 }  // namespace stacktrace

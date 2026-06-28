@@ -1,14 +1,15 @@
-# StackTrace v2 — C++ native dashboard
+# StackTrace (C++) — native dashboard
 
 A self-contained C++/[FTXUI](https://github.com/ArthurSonzogni/FTXUI) rewrite of
-the v1 shell prototype. One binary renders every panel natively — no tmux, no
+the shell prototype. One binary renders every panel natively — no tmux, no
 Homebrew tools, zero runtime dependencies. Runs on macOS, Linux, and Raspberry Pi.
 
-> **Status: scaffold.** The architecture, build system, layout engine, and the
-> cross-platform metrics layer are in place and compile/run today. Panels that
-> depend on network or file parsing (stock quotes, RSS, iCal) render live data
-> where wired and are marked with `TODO` where a phase is still open. See the
-> roadmap in the [root README](../README.md).
+> **Status: ready for use on macOS & Linux (Phases 1–4).** All panels are wired
+> to live data: system metrics from `/proc`/`sysctl`, a block-digit clock, Yahoo
+> Finance quotes, RSS/Atom headlines, and an iCal/CalDAV calendar — the network
+> panels each run on their own background thread so the UI never blocks.
+> Raspberry Pi support (a dedicated GPIO/thermal panel + ARM cross-compile) is
+> **in progress** — see the roadmap in the [root README](../README.md).
 
 ## Build
 
@@ -48,10 +49,10 @@ src/
 │   ├── Panel.hpp         Base interface: Render() / Update() / Title()
 │   ├── SystemMetrics.*   CPU, RAM, disk, network, temp, process list
 │   ├── Clock.*           Block-digit clock (std::chrono)
-│   ├── StockTicker.*     Yahoo Finance quotes via libcurl
-│   ├── Calendar.*        Month grid + upcoming events
+│   ├── StockTicker.*     Yahoo Finance quotes (own client + worker thread)
+│   ├── Calendar.*        Month grid (today highlighted) + upcoming events
 │   ├── FileManager.*     Directory browser (std::filesystem)
-│   ├── NewsReader.*      RSS/Atom headlines
+│   ├── NewsReader.*      RSS/Atom headlines (own client + worker thread)
 │   └── Notes.*           Notes-file viewer
 ├── platform/
 │   ├── Metrics.hpp       OS-agnostic metrics interface
@@ -62,9 +63,12 @@ src/
 ├── net/
 │   ├── HttpClient.*      libcurl wrapper (no-op stub without libcurl)
 │   └── RssParser.*       tinyxml2 RSS/Atom parser
+├── calendar/
+│   └── ICalParser.*      RFC 5545 .ics parser (folding, DATE/DATE-TIME, UTC)
 └── config/
     └── Config.*          ~/.config/stacktrace/config.json loader
 ```
 
 CMake selects exactly one `platform/*.cpp` for the host, so the panel code never
-sees an `#ifdef`.
+sees an `#ifdef`. The three network panels (markets, news, calendar) each own a
+`HttpClient` and a worker thread, so the refresh loop never blocks on I/O.

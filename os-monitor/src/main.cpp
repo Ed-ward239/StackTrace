@@ -1,4 +1,4 @@
-// StackTrace v2 — self-contained terminal workspace dashboard.
+// StackTrace (C++) — self-contained terminal workspace dashboard.
 //
 // Composes the panels into a 3-row grid with FTXUI, refreshes their state on
 // a background thread, and redraws on each tick. Quit with 'q' or Esc.
@@ -15,7 +15,6 @@
 #include <vector>
 
 #include "config/Config.hpp"
-#include "net/HttpClient.hpp"
 #include "panels/Calendar.hpp"
 #include "panels/Clock.hpp"
 #include "panels/FileManager.hpp"
@@ -31,16 +30,17 @@ using namespace stacktrace;
 
 int main() {
   const Config cfg = Config::Load();
-  net::HttpClient http;
 
-  // Own the panels; `panels` is a flat view used by the refresh loop.
+  // Own the panels; `panels` is a flat view used by the refresh loop. The
+  // network panels (markets, calendar, news) each own a libcurl client and a
+  // background worker thread, so they never block this refresh loop.
   auto metrics = std::make_unique<SystemMetricsPanel>();
   auto clk = std::make_unique<ClockPanel>();
-  auto markets = std::make_unique<StockTickerPanel>(cfg.tickers, &http);
+  auto markets = std::make_unique<StockTickerPanel>(cfg.tickers);
   auto calendar =
       std::make_unique<CalendarPanel>(Config::ExpandHome(cfg.calendar_source));
   auto files = std::make_unique<FileManagerPanel>(Config::ExpandHome("~/"));
-  auto news = std::make_unique<NewsReaderPanel>(cfg.rss_feeds, &http);
+  auto news = std::make_unique<NewsReaderPanel>(cfg.rss_feeds);
   auto notes = std::make_unique<NotesPanel>(Config::ExpandHome(cfg.notes_file));
 
   std::vector<Panel*> panels = {metrics.get(), clk.get(),  markets.get(),

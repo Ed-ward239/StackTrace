@@ -8,7 +8,7 @@
 namespace stacktrace {
 
 // Read-only directory browser. A future interactive version (key-driven
-// navigation, previews) is noted in the v2 roadmap.
+// navigation, previews) is noted in the roadmap.
 class FileManagerPanel : public Panel {
  public:
   explicit FileManagerPanel(std::string start_dir);

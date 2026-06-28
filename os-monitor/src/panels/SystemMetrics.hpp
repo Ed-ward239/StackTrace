@@ -7,7 +7,7 @@
 
 namespace stacktrace {
 
-// Replaces the v1 fastfetch + btop panes: live CPU, RAM, disk, network,
+// Replaces the shell build's fastfetch + btop panes: live CPU, RAM, disk, network,
 // temperature and a top-process list, read directly from the OS.
 class SystemMetricsPanel : public Panel {
  public:

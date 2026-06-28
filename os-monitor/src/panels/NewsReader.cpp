@@ -1,41 +1,48 @@
 #include "panels/NewsReader.hpp"
 
-#include "net/HttpClient.hpp"
+#include <chrono>
+
 #include "net/RssParser.hpp"
 
 namespace stacktrace {
 
 using namespace ftxui;
 
-NewsReaderPanel::NewsReaderPanel(std::vector<std::string> feeds,
-                                 net::HttpClient* http)
-    : feeds_(std::move(feeds)), http_(http) {}
-
-void NewsReaderPanel::Update() {
-  auto now = std::chrono::steady_clock::now();
-  if (last_fetch_.time_since_epoch().count() != 0 &&
-      now - last_fetch_ < std::chrono::minutes(5))
-    return;
-  last_fetch_ = now;
-  Fetch();
+NewsReaderPanel::NewsReaderPanel(std::vector<std::string> feeds)
+    : feeds_(std::move(feeds)) {
+  worker_ = std::thread([this] { Worker(); });
 }
 
-void NewsReaderPanel::Fetch() {
-  if (!http_) return;
-  std::vector<std::string> fresh;
-  for (const auto& url : feeds_) {
-    auto body = http_->Get(url);
-    if (!body) continue;
-    for (auto& item : net::ParseFeed(*body)) {
-      if (item.title.empty()) continue;
-      fresh.push_back(item.title);
-      if (fresh.size() >= 20) break;
+NewsReaderPanel::~NewsReaderPanel() {
+  stop_ = true;
+  if (worker_.joinable()) worker_.join();
+}
+
+void NewsReaderPanel::Worker() {
+  while (!stop_) {
+    std::vector<std::string> fresh;
+    for (const auto& url : feeds_) {
+      if (stop_) return;
+      auto body = http_.Get(url);
+      if (!body) continue;
+      for (auto& item : net::ParseFeed(*body)) {
+        if (item.title.empty()) continue;
+        fresh.push_back(item.title);
+        if (fresh.size() >= 20) break;
+      }
     }
+    if (!fresh.empty()) {
+      std::lock_guard<std::mutex> lk(mutex_);
+      headlines_ = std::move(fresh);
+    }
+    // Sleep ~5 min, waking promptly on shutdown.
+    for (int i = 0; i < 300 && !stop_; ++i)
+      std::this_thread::sleep_for(std::chrono::seconds(1));
   }
-  if (!fresh.empty()) headlines_ = std::move(fresh);
 }
 
 Element NewsReaderPanel::Render() {
+  std::lock_guard<std::mutex> lk(mutex_);
   Elements rows;
   if (headlines_.empty()) {
     rows.push_back(text("fetching feeds…") | dim);

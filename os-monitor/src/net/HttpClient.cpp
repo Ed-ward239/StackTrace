@@ -2,6 +2,8 @@
 
 #ifdef HAVE_CURL
 #include <curl/curl.h>
+
+#include <mutex>
 #endif
 
 namespace stacktrace::net {
@@ -13,9 +15,21 @@ size_t WriteCallback(char* ptr, size_t size, size_t nmemb, void* userdata) {
   out->append(ptr, size * nmemb);
   return size * nmemb;
 }
+
+// curl_global_init() is not thread-safe, so run it exactly once on the first
+// HttpClient construction (panels build their clients on the main thread before
+// starting workers). Each HttpClient owns its own easy handle, used by a single
+// worker thread, so handles are never shared across threads.
+void EnsureGlobalInit() {
+  static std::once_flag flag;
+  std::call_once(flag, [] { curl_global_init(CURL_GLOBAL_DEFAULT); });
+}
 }  // namespace
 
-HttpClient::HttpClient() { handle_ = curl_easy_init(); }
+HttpClient::HttpClient() {
+  EnsureGlobalInit();
+  handle_ = curl_easy_init();
+}
 
 HttpClient::~HttpClient() {
   if (handle_) curl_easy_cleanup(static_cast<CURL*>(handle_));

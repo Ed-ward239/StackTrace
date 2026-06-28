@@ -1,33 +1,36 @@
 #pragma once
 
+#include "net/HttpClient.hpp"
 #include "panels/Panel.hpp"
 
-#include <chrono>
+#include <atomic>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
-
-namespace stacktrace::net {
-class HttpClient;
-}
 
 namespace stacktrace {
 
-// Aggregates headlines from the configured RSS/Atom feeds.
+// Aggregates headlines from the configured RSS/Atom feeds. A background worker
+// refetches every few minutes; Render() reads a snapshot under a short lock.
 class NewsReaderPanel : public Panel {
  public:
-  NewsReaderPanel(std::vector<std::string> feeds, net::HttpClient* http);
+  explicit NewsReaderPanel(std::vector<std::string> feeds);
+  ~NewsReaderPanel() override;
 
   ftxui::Element Render() override;
-  void Update() override;  // refetches at most once every 5 minutes
+  void Update() override {}  // no-op: the worker thread refreshes
   std::string Title() const override { return "News"; }
 
  private:
-  void Fetch();
+  void Worker();
 
   std::vector<std::string> feeds_;
-  std::vector<std::string> headlines_;
-  net::HttpClient* http_;
-  std::chrono::steady_clock::time_point last_fetch_{};
+  std::vector<std::string> headlines_;  // guarded by mutex_
+  std::mutex mutex_;
+  net::HttpClient http_;
+  std::atomic<bool> stop_{false};
+  std::thread worker_;
 };
 
 }  // namespace stacktrace
