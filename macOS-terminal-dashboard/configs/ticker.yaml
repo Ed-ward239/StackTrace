@@ -1,0 +1,16 @@
+# StackTrace v1 — stock watchlist for the `ticker` pane.
+# Install location: ~/.config/ticker/ticker.yaml
+# Tool: https://github.com/achannarasappa/ticker
+show-summary: true
+show-tags: true
+show-fundamentals: true
+show-separator: true
+sort: alpha
+watchlist:
+  - AAPL
+  - NVDA
+  - TSLA
+  - MSFT
+  - GOOG
+  - SPY
+  - BTC-USD

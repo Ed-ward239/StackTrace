@@ -1,0 +1,6 @@
+# StackTrace v1 — RSS subscriptions for the `newsboat` pane.
+# Install location: ~/.newsboat/urls
+# Format: <url> [optional "Title"]
+https://feeds.bbci.co.uk/news/rss.xml "BBC News"
+https://www.theverge.com/rss/index.xml "The Verge"
+https://news.ycombinator.com/rss "Hacker News"

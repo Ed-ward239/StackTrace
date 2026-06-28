@@ -1,0 +1,14 @@
+# StackTrace v1 — auto-launch snippet for ~/.zshrc
+# Launches the dashboard automatically when a fresh Ghostty window opens
+# outside of an existing tmux session.
+
+export PATH="$HOME/go/bin:$PATH"      # ticker installs here via `go install`
+export PATH="$HOME/.local/bin:$PATH"
+
+# ── Auto-launch StackTrace in Ghostty ──
+if [[ "$TERM_PROGRAM" == "ghostty" ]] && [[ -z "$TMUX" ]]; then
+  echo "🖥  Launching StackTrace dashboard..."
+  sleep 1
+  ~/stacktrace/v1/ghostty_dash.sh
+  exit 0
+fi
